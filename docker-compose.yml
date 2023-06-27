@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=WAVtoMP3
+      - DB_USER=kirill
+      - DB_PASSWORD=909961
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432/tcp"
+    environment:
+      - POSTGRES_USER=kirill
+      - POSTGRES_PASSWORD=909961
+      - POSTGRES_DB=WAVtoMP3
