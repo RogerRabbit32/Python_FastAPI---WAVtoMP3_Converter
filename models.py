@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, UUID
+from sqlalchemy import Column, Integer, String
 
 from database import Base
 
@@ -8,4 +8,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    token = Column(UUID(as_uuid=True), unique=True, nullable=False)
+    token = Column(String, unique=True, nullable=False)
+
+
+class Audio(Base):
+    __tablename__ = "audios"
+    id = Column(String, primary_key=True, index=True)
+    mp3_file_path = Column(String)
