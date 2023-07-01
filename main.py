@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydub import AudioSegment
 from uuid import uuid4
+import io
 
 from Accounts.schemas import UserCreate, UserResponse
-from Audios.schemas import AudioUpload
 from database import SessionLocal, engine
 from models import Base, User, Audio
 
@@ -36,23 +36,21 @@ def create_user(request: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/record")
-async def convert_audio(request: AudioUpload, db: Session = Depends(get_db)):
+async def convert_audio(user_id: int, user_access_token: str, audio: UploadFile = File(...), db: Session = Depends(get_db)):
     audio_id = str(uuid4())
 
     # Convert WAV to MP3 and save the resulting file to ./audios/media
-    audio_bytes = await request.audio.read()
-    audio_segment = AudioSegment.from_file(audio_bytes, format='wav')
-    mp3_data = audio_segment.export(None, format='mp3').getvalue()
-    audio_path = f"audios/media/{audio_id}.mp3"
-    with open(audio_path, "wb") as f:
-        f.write(mp3_data)
+    audio_bytes = await audio.read()
+    audio_file = io.BytesIO(audio_bytes)
+    audio_segment = AudioSegment.from_file(audio_file, format='wav')
+    audio_segment.export(f"Audios/media/{audio_id}", format='mp3')
 
     # Save a new audio object in the DB
-    new_audio = Audio(id=audio_id, mp3_file_path=audio_path)
-    db.add(new_audio)
-    db.commit()
-    db.close()
+    # new_audio = Audio(id=audio_id, mp3_file_path=audio_path)
+    # db.add(new_audio)
+    # db.commit()
+    # db.close()
 
     # Generate the URL
-    url = f"http://localhost:8000/record?id={audio_id}&user={request.user_id}"
+    url = f"http://localhost:8000/record?id={audio_id}&user={user_id}"
     return {"url": url}
