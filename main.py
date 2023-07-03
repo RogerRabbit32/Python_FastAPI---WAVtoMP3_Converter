@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydub import AudioSegment
 from uuid import uuid4
 import io
+import os
 
 from Accounts.schemas import UserCreate, UserResponse
 from database import SessionLocal, engine
@@ -43,3 +45,12 @@ async def upload_audio(user_id: int, user_access_token: str, audio: UploadFile =
     # Generate the download URL
     url = f"http://localhost:8000/record?id={converted_audio_id}&user={user_id}"
     return {"url": url}
+
+
+@app.get("/record")
+async def download_audio(audio_id: str, user_id: int):
+    file_path = f"Audios/media/{audio_id}.mp3"
+    if os.path.exists(file_path):
+        return FileResponse(path=f"Audios/media/{audio_id}.mp3")  # media_type='multipart/form-data'
+    else:
+        raise HTTPException(status_code=404, detail="Audio file not found")
