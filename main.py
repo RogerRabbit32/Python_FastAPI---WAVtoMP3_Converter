@@ -7,6 +7,7 @@ import io
 from Accounts.schemas import UserCreate, UserResponse
 from database import SessionLocal, engine
 from models import Base, User, Audio
+from crud import validate_user, convert_audio
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -36,21 +37,9 @@ def create_user(request: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/record")
-async def convert_audio(user_id: int, user_access_token: str, audio: UploadFile = File(...), db: Session = Depends(get_db)):
-    audio_id = str(uuid4())
-
-    # Convert WAV to MP3 and save the resulting file to ./audios/media
-    audio_bytes = await audio.read()
-    audio_file = io.BytesIO(audio_bytes)
-    audio_segment = AudioSegment.from_file(audio_file, format='wav')
-    audio_segment.export(f"Audios/media/{audio_id}", format='mp3')
-
-    # Save a new audio object in the DB
-    # new_audio = Audio(id=audio_id, mp3_file_path=audio_path)
-    # db.add(new_audio)
-    # db.commit()
-    # db.close()
-
-    # Generate the URL
-    url = f"http://localhost:8000/record?id={audio_id}&user={user_id}"
+async def upload_audio(user_id: int, user_access_token: str, audio: UploadFile = File(...), db: Session = Depends(get_db)):
+    validate_user(db, user_id, user_access_token)
+    converted_audio_id = await convert_audio(db, audio)
+    # Generate the download URL
+    url = f"http://localhost:8000/record?id={converted_audio_id}&user={user_id}"
     return {"url": url}
